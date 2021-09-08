@@ -1,6 +1,7 @@
 package org.github.kshashov.uifields;
 
 import com.google.auto.service.AutoService;
+import com.google.common.base.CaseFormat;
 import org.github.kshashov.uifields.api.UIField;
 
 import javax.annotation.processing.*;
@@ -25,12 +26,13 @@ public class UIFieldsProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Map<String, List<VariableElement>> classFields = new HashMap<>();
+
+        // Populate map with (class name -> ui fields) pairs
         for (TypeElement annotation : annotations) {
             Set<? extends Element> annotatedElements = roundEnv.getElementsAnnotatedWith(annotation);
 
             annotatedElements.forEach(element -> {
                 VariableElement variableElement = (VariableElement) element;
-//                DeclaredType declaredType = (DeclaredType) element.asType();
                 String className = ((TypeElement) variableElement.getEnclosingElement()).getQualifiedName().toString();
                 if (!classFields.containsKey(className)) {
                     classFields.put(className, new LinkedList<>());
@@ -40,6 +42,7 @@ public class UIFieldsProcessor extends AbstractProcessor {
             });
         }
 
+        // Create a new {ClassName}Fields enum for each source class
         for (Map.Entry<String, List<VariableElement>> entry : classFields.entrySet()) {
             StringBuilder value = new StringBuilder();
             for (VariableElement element : entry.getValue()) {
@@ -64,7 +67,6 @@ public class UIFieldsProcessor extends AbstractProcessor {
             packageName = className.substring(0, lastDot);
         }
 
-        String simpleClassName = className.substring(lastDot + 1);
         String fieldsClassName = className + "Fields";
         String fieldsSimpleClassName = fieldsClassName.substring(lastDot + 1);
 
@@ -84,36 +86,27 @@ public class UIFieldsProcessor extends AbstractProcessor {
             out.println(" {");
             out.println();
 
-//            out.print("    private ");
-//            out.print(simpleClassName);
-//            out.print(" object = new ");
-//            out.print(simpleClassName);
-//            out.println("();");
-//            out.println();
-//
-//            out.print("    public ");
-//            out.print(simpleClassName);
-//            out.println(" build() {");
-//            out.println("        return object;");
-//            out.println("    }");
-//            out.println();
-
             fields.forEach(element -> {
                 UIField annotation = element.getAnnotation(UIField.class);
                 String fieldTitle = annotation.title();
-                String fieldField = annotation.field();
-                if (fieldField.isEmpty()) {
-                    fieldField = element.getSimpleName().toString();
+                String fieldHandle = element.getSimpleName().toString();
+                String fieldEnumProperty = annotation.enumProperty();
+                String fieldCaption = annotation.caption();
+                if (fieldEnumProperty.isEmpty()) {
+                    fieldEnumProperty = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, fieldHandle);
                 }
 
                 out.print("    ");
-                out.print(fieldField.toUpperCase());
+                out.print(fieldEnumProperty);
                 out.print("(");
                 out.print("\"");
-                out.print(fieldField);
+                out.print(fieldHandle);
                 out.print("\",");
                 out.print("\"");
                 out.print(fieldTitle);
+                out.print("\",");
+                out.print("\"");
+                out.print(fieldCaption);
                 out.println("\"),");
             });
 
@@ -123,13 +116,15 @@ public class UIFieldsProcessor extends AbstractProcessor {
 
             out.println("    private final String handle;");
             out.println("    private final String title;");
+            out.println("    private final String caption;");
             out.println();
 
             out.print("    ");
             out.print(fieldsSimpleClassName);
-            out.println("(String handle, String title) {");
+            out.println("(String handle, String title, String caption) {");
             out.println("        this.handle = handle;");
             out.println("        this.title = title;");
+            out.println("        this.caption = caption;");
             out.println("    }");
 
             out.println();
@@ -141,6 +136,10 @@ public class UIFieldsProcessor extends AbstractProcessor {
 
             out.println("    public String getTitle() {");
             out.println("        return title;");
+            out.println("    }");
+
+            out.println("    public String getCaption() {");
+            out.println("        return caption;");
             out.println("    }");
 
             out.println("}");
