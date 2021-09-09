@@ -81,9 +81,12 @@ public class UIFieldsProcessor extends AbstractProcessor {
                 out.println();
             }
 
+            out.println("import org.github.kshashov.uifields.api.UIFieldDeclaration;");
+            out.println();
+
             out.print("public enum ");
             out.print(fieldsSimpleClassName);
-            out.println(" {");
+            out.println(" implements UIFieldDeclaration{");
             out.println();
 
             fields.forEach(element -> {
@@ -129,15 +132,19 @@ public class UIFieldsProcessor extends AbstractProcessor {
 
             out.println();
 
+            out.println("    @Override");
             out.println("    public String getHandle() {");
             out.println("        return handle;");
             out.println("    }");
             out.println();
 
+            out.println("    @Override");
             out.println("    public String getTitle() {");
             out.println("        return title;");
             out.println("    }");
+            out.println();
 
+            out.println("    @Override");
             out.println("    public String getCaption() {");
             out.println("        return caption;");
             out.println("    }");
